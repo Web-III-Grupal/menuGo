@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">MenuGo</string>
+    <string name="ErrorMsgAdd">Error al agregar el dato</string>
+    <string name="ErrorMsgUpdate">Error al modificar el dato</string>
+    <string name="ErrorMsgRemove">Error al eliminar el dato</string>
+    <string name="ErrorMsgGetAll">Error al obtener la lista de datos</string>
+    <string name="ErrorMsgGetByid">Error al obtener el dato especifico</string>
+    <string name="product_name">" Nombre"</string>
+    <string name="product_description">Descripcion</string>
+    <string name="product_price">Precio</string>
+    <string name="product_category">Categoria</string>
+    <string name="save_product">Guardar producto</string>
+    <string name="product_id">ID</string>
+    <string name="btnTextProduct_main">Agregar nuevo producto</string>
+    <string name="MsgDataNoFound">El dato no fue encontrado</string>
+    <string name="update_product">Actualizar producto</string>
+    <string name="product_added">Añadir producto</string>
+    <string name="product_updated">Actualizacion exitosa</string>
+    <string name="MsgDuplicateDate">No se permiten datos duplicados</string>
+    <string name="MsgSaveSuccess">La informacion se guardo con exito</string>
+    <string name="MsgDeleteSuccess">La información se eliminó con éxito</string>
+    <string name="TextSave_menu">Guardar</string>
+    <string name="TextDelete_menu">Eliminar</string>
+    <string name="TextCancel_mnu">Cancelar</string>
+    <string name="TextYes">Si</string>
+    <string name="TextNo">No</string>
+    <string name="TextTitleDialogQuestion">Pregunta...</string>
+    <string name="TextSaveActionQuestion">Desea guardar la información?</string>
+    <string name="TextDeleteActionQuestion">Desea eliminar la información?</string>
+</resources>

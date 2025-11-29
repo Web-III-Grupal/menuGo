@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MenuGo</string>
+    <string name="ErrorMsgAdd">Error when adding the data</string>
+    <string name="ErrorMsgUpdate">Error when updating the data</string>
+    <string name="ErrorMsgRemove">Error when removing the data</string>
+    <string name="ErrorMsgGetAll">Error when getting all data</string>
+    <string name="ErrorMsgGetByid">Error when tryting to the get the specific data</string>
+    <string name="MsgDataNoFound">The data was not found.</string>
+    <string name="btnTextProduct_main">Add new product</string>
+    <string name="product_id">ID</string>
+    <string name="product_name">Product name</string>
+    <string name="product_description">Description</string>
+    <string name="product_price">Price</string>
+    <string name="product_category">Category</string>
+    <string name="save_product">Save Product</string>
+    <string name="update_product">Update Product</string>
+    <string name="product_added">Product added successfully</string>
+    <string name="product_updated">Product updated successfully</string>
+    <string name="MsgDuplicateDate">The information is duplicated.</string>
+    <string name="MsgSaveSuccess">The information is saved successfully,</string>
+    <string name="MsgDeleteSuccess">The information was deleted successfully.</string>
+    <string name="TextSave_menu">Save</string>
+    <string name="TextDelete_menu">Delete</string>
+    <string name="TextCancel_mnu">Cancel</string>
+    <string name="TextYes">Yes</string>
+    <string name="TextNo">No</string>
+    <string name="TextTitleDialogQuestion">Question...</string>
+    <string name="TextSaveActionQuestion">Are you sure to save the information?</string>
+    <string name="TextDeleteActionQuestion">Are you sure to delete the information?</string>
+</resources>
