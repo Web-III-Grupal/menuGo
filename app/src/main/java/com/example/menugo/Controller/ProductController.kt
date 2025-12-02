@@ -1,7 +1,8 @@
-package Controller
+package com.example.menugo.controller
 
-import Data.IDataManager
-import Entity.Product
+import com.example.menugo.Entity.Product
+import com.example.menugo.data.IDataManager
+
 
 class ProductController(private val dataManager: IDataManager<Product>) {
 

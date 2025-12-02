@@ -1,4 +1,4 @@
-package Data
+package com.example.menugo.data
 
 interface IDataManager<T> {
     fun add(item: T)

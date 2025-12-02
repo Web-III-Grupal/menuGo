@@ -1,4 +1,4 @@
-package Entity
+package com.example.menugo.Entity
 
 data class Product(
     var id: Int,
