@@ -13,13 +13,18 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.menugo.AddProductActivity
+import com.example.menugo.CartActivity
+import com.example.menugo.ProductDetailActivity
 import com.example.menugo.Entity.Product
+import com.example.menugo.R
 import com.example.menugo.Ui.ProductAdapter
-import com.example.menugo.util.Util
+import com.example.menugo.data.ProductStore
+import com.example.menugo.Util.UserRole
+import com.example.menugo.Util.Util
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Source
-
 
 class ProductListActivity : AppCompatActivity() {
 
@@ -32,8 +37,12 @@ class ProductListActivity : AppCompatActivity() {
 
     private lateinit var categoryName: String
     private var allProducts: List<Product> = emptyList()
+    private val docIdsByProductId = mutableMapOf<Int, String>()
 
-    private val db = FirebaseFirestore.getInstance()
+    private var db: FirebaseFirestore? = null
+
+    // Rol que viene desde MainActivity (por defecto cliente)
+    private var userRole: String = UserRole.ROLE_CLIENT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,98 +55,154 @@ class ProductListActivity : AppCompatActivity() {
             insets
         }
 
+        // --------- Datos que nos llegan ---------
+        categoryName = intent.getStringExtra("category") ?: "Productos"
+
+        val rawRole = intent.getStringExtra(UserRole.EXTRA_USER_ROLE) ?: UserRole.ROLE_CLIENT
+        userRole = rawRole.trim().lowercase()
+
+        // (solo para depurar, puedes quitar estos toasts)
+        // Util.showToast(this, if (userRole == UserRole.ROLE_ADMIN) "Modo administrador" else "Modo cliente")
+
+        // --------- Referencias a vistas ---------
         rvProducts = findViewById(R.id.rvProducts)
         txtCategoryTitle = findViewById(R.id.txtCategoryTitle)
         etSearchProduct = findViewById(R.id.etSearchProduct)
         fabAddProduct = findViewById(R.id.fabAddProduct)
         fabOpenCart = findViewById(R.id.fabOpenCart)
 
-        categoryName = intent.getStringExtra("category") ?: "Productos"
         txtCategoryTitle.text = categoryName
 
+        // --------- Firebase ---------
+        try {
+            FirebaseApp.initializeApp(this)
+            db = FirebaseFirestore.getInstance()
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+            db = null
+        }
+
+        // --------- Mostrar / ocultar FAB según rol ---------
+        if (userRole == UserRole.ROLE_ADMIN) {
+            fabAddProduct.show()
+            fabAddProduct.setOnClickListener {
+                val intent = Intent(this, AddProductActivity::class.java).apply {
+                    putExtra("category", categoryName)
+                }
+                startActivity(intent)
+            }
+        } else {
+            fabAddProduct.hide()
+        }
+        // --------- Cargar productos ---------
+        loadProducts()
+
+        // --------- Adapter ---------
         adapter = ProductAdapter(
             products = allProducts,
             onItemClick = { product ->
-                val i = Intent(this, ProductDetailActivity::class.java)
-                i.putExtra("productId", product.id)
-                startActivity(i)
+                // Ir al detalle, pasamos todos los datos
+                val intent = Intent(this, ProductDetailActivity::class.java).apply {
+                    putExtra("id", product.id)
+                    putExtra("name", product.name)
+                    putExtra("description", product.description)
+                    putExtra("price", product.price)
+                    putExtra("category", product.category)
+                    putExtra("imageUri", product.imageUri)
+                    putExtra(UserRole.EXTRA_USER_ROLE, userRole)
+                }
+                startActivity(intent)
             },
             onItemLongClick = { product ->
-                showDeleteDialog(product)
+                // Sólo el admin puede eliminar
+                if (userRole == UserRole.ROLE_ADMIN) {
+                    showDeleteDialog(product)
+                } else {
+                    Util.showToast(this, "Solo el administrador puede eliminar productos")
+                }
             }
         )
 
         rvProducts.layoutManager = LinearLayoutManager(this)
         rvProducts.adapter = adapter
 
+        // --------- Búsqueda ---------
         setupSearch()
 
+        // --------- Botones flotantes ---------
         fabAddProduct.setOnClickListener {
-            val i = Intent(this, AddProductActivity::class.java)
-            i.putExtra("category", categoryName)
-            startActivity(i)
+            if (userRole == UserRole.ROLE_ADMIN) {
+                val intent = Intent(this, AddProductActivity::class.java).apply {
+                    putExtra("category", categoryName)
+                    putExtra(UserRole.EXTRA_USER_ROLE, userRole)
+                }
+                startActivity(intent)
+            } else {
+                Util.showToast(this, "Solo el administrador puede agregar productos")
+            }
         }
 
         fabOpenCart.setOnClickListener {
-            val i = Intent(this, CartActivity::class.java)
-            startActivity(i)
+            startActivity(Intent(this, CartActivity::class.java))
         }
-
-        loadProductsFromFirebase()
     }
 
     override fun onResume() {
         super.onResume()
-        loadProductsFromFirebase()
+        loadProducts()
     }
 
+    // --------- Cargar productos desde Firestore o local ---------
+    private fun loadProducts() {
+        val firestore = db
+        if (firestore == null) {
+            // Modo local si Firebase falla
+            allProducts = ProductStore.products.filter {
+                it.category.equals(categoryName, ignoreCase = true)
+            }
+            applyFilter(etSearchProduct.text.toString())
+            return
+        }
 
-    private fun loadProductsFromFirebase() {
-        db.collection("products")
+        firestore.collection("products")
             .get()
             .addOnSuccessListener { snapshot ->
-                val list = mutableListOf<Product>()
-                val names = mutableListOf<String>()
+                docIdsByProductId.clear()
 
-                for (doc in snapshot.documents) {
-                    val id = (doc.getLong("id") ?: 0L).toInt()
-                    val name = doc.getString("name") ?: ""
-                    val description = doc.getString("description") ?: ""
-                    val price = doc.getDouble("price") ?: 0.0
-                    val category = doc.getString("category") ?: ""
-                    val imageUri = doc.getString("imageUri")
+                val mapped = snapshot.documents.map { doc ->
+                    val data = doc.data ?: emptyMap<String, Any?>()
 
-                    names.add(name)
+                    val id = (data["id"] as? Number)?.toInt() ?: 0
+                    val name = (data["name"] ?: data["name "] ?: "Sin nombre").toString()
+                    val description = (data["description"] ?: data["descripcion"] ?: "").toString()
+                    val price = (data["price"] as? Number)?.toDouble() ?: 0.0
+                    val category = (data["category"] ?: data["categoria"] ?: "").toString()
+                    val imageUri = (data["imageUri"] ?: "").toString()
 
-                    list.add(
-                        Product(
-                            id = id,
-                            name = name,
-                            description = description,
-                            price = price,
-                            category = category,
-                            imageUri = imageUri
-                        )
-                    )
+                    if (id != 0) {
+                        docIdsByProductId[id] = doc.id
+                    }
+
+                    Product(id, name, description, price, category, imageUri)
                 }
 
-                allProducts = list
-                adapter.updateData(allProducts)
-                applyFilter(etSearchProduct.text.toString())
+                allProducts = mapped.filter { product ->
+                    product.category.trim()
+                        .equals(categoryName.trim(), ignoreCase = true)
+                }
 
-                val fromCache = snapshot.metadata.isFromCache
-                Util.showToast(
-                    this,
-                    "Firebase productos: ${list.size} (fromCache=$fromCache) -> ${names.joinToString()}"
-                )
+                applyFilter(etSearchProduct.text.toString())
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
-                Util.showToast(this, "Error Firebase: ${e.message}")
+                allProducts = ProductStore.products.filter {
+                    it.category.equals(categoryName, ignoreCase = true)
+                }
+                applyFilter(etSearchProduct.text.toString())
             }
     }
 
-
+    // --------- Búsqueda local en la lista ---------
     private fun setupSearch() {
         etSearchProduct.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -153,20 +218,38 @@ class ProductListActivity : AppCompatActivity() {
         val filtered = if (query.isBlank()) {
             allProducts
         } else {
-            allProducts.filter {
-                it.name.contains(query, ignoreCase = true)
-            }
+            allProducts.filter { it.name.contains(query, ignoreCase = true) }
         }
-        adapter.updateData(filtered)
+        if (::adapter.isInitialized) {
+            adapter.updateData(filtered)
+        }
     }
 
+    // --------- Eliminar producto ---------
     private fun showDeleteDialog(product: Product) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar producto")
-            .setMessage("¿Desea eliminar '${product.name}'? (solo UI por ahora)")
+            .setMessage("¿Desea eliminar '${product.name}'?")
             .setPositiveButton("Eliminar") { _, _ ->
-                allProducts = allProducts.filter { it.id != product.id }
-                adapter.updateData(allProducts)
+                val firestore = db
+                val docId = docIdsByProductId[product.id]
+
+                if (firestore != null && docId != null) {
+                    firestore.collection("products").document(docId)
+                        .delete()
+                        .addOnSuccessListener {
+                            Util.showToast(this, "Producto eliminado")
+                            loadProducts()
+                        }
+                        .addOnFailureListener { e ->
+                            Util.showToast(this, "Error al eliminar: ${e.message}")
+                        }
+                } else {
+                    // Fallback local
+                    ProductStore.products.removeAll { it.id == product.id }
+                    loadProducts()
+                    Util.showToast(this, "Producto eliminado (local)")
+                }
             }
             .setNegativeButton("Cancelar", null)
             .show()

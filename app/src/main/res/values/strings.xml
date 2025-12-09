@@ -27,4 +27,10 @@
     <string name="TextTitleDialogQuestion">Pregunta...</string>
     <string name="TextSaveActionQuestion">Desea guardar la información?</string>
     <string name="TextDeleteActionQuestion">Desea eliminar la información?</string>
+    <string name="action_logout">Cerrar sesión</string>
+
+
+    <!-- 🔹 acciones de la barra superior -->
+    <string name="action_search">Buscar</string>
+
 </resources>

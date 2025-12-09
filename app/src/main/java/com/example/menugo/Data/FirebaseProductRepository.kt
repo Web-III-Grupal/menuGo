@@ -5,40 +5,37 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class FirebaseProductRepository {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val productsRef = db.collection("products")
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     /**
-     * Carga TODOS los productos desde Firestore y los copia a ProductStore.products.
+     * Carga todos los productos desde Firestore y los convierte a la clase Product.
      */
     fun syncAllProducts(
-        onSuccess: () -> Unit,
+        onSuccess: (List<Product>) -> Unit,
         onError: (Exception) -> Unit
     ) {
-        productsRef.get()
+        db.collection("products")
+            .get()
             .addOnSuccessListener { snapshot ->
-                ProductStore.products.clear()
-
-                for (doc in snapshot.documents) {
+                val products = snapshot.documents.mapNotNull { doc ->
                     val id = (doc.getLong("id") ?: 0L).toInt()
-                    val name = doc.getString("name") ?: ""
+                    val name = doc.getString("name") ?: return@mapNotNull null
                     val description = doc.getString("description") ?: ""
                     val price = doc.getDouble("price") ?: 0.0
                     val category = doc.getString("category") ?: ""
-                    val imageUri = doc.getString("imageUri")
+                    val imageUri = doc.getString("imageUri") ?: ""   // <- AQUÍ FORZAMOS String
 
-                    val product = Product(
+                    Product(
                         id = id,
                         name = name,
                         description = description,
                         price = price,
                         category = category,
-                        imageUri = imageUri
+                        imageUri = imageUri        // ya es String, no String?
                     )
-                    ProductStore.products.add(product)
                 }
 
-                onSuccess()
+                onSuccess(products)
             }
             .addOnFailureListener { e ->
                 onError(e)
@@ -48,18 +45,24 @@ class FirebaseProductRepository {
     /**
      * Guarda un producto nuevo en Firestore.
      */
-    fun addProduct(product: Product, onResult: (Boolean) -> Unit = {}) {
-        val data = hashMapOf(
+    fun addProduct(
+        product: Product,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        val productMap = hashMapOf(
             "id" to product.id,
             "name" to product.name,
             "description" to product.description,
             "price" to product.price,
             "category" to product.category,
+            // product.imageUri ya es String (NO nullable)
             "imageUri" to product.imageUri
         )
 
-        productsRef.add(data)
-            .addOnSuccessListener { onResult(true) }
-            .addOnFailureListener { onResult(false) }
+        db.collection("products")
+            .add(productMap)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e) }
     }
 }

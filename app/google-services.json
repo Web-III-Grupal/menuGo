@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1077491737238",
-    "project_id": "menugo-75550",
-    "storage_bucket": "menugo-75550.firebasestorage.app"
+    "project_number": "133770542646",
+    "project_id": "menugo-5560d",
+    "storage_bucket": "menugo-5560d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1077491737238:android:233659e12e6bb4a26fd8b7",
+        "mobilesdk_app_id": "1:133770542646:android:1617e90b229205b3b5e297",
         "android_client_info": {
           "package_name": "com.example.menugo"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCgJIAyd89L6BaWNGGo24YEDC0fxUooE7k"
+          "current_key": "AIzaSyDoIi5dl7EGYaSN_5WrlAUMZ--WU7aGh5k"
         }
       ],
       "services": {

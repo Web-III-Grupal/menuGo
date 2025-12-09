@@ -1,7 +1,6 @@
 package com.example.menugo
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -12,12 +11,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.menugo.Entity.Product
 import com.example.menugo.data.CartManager
-import com.example.menugo.data.ProductStore
-import com.example.menugo.util.Util
+import com.example.menugo.Util.Util
 
 class ProductDetailActivity : AppCompatActivity() {
 
-    private var product: Product? = null
+    private lateinit var product: Product
     private var quantity: Int = 1
 
     private lateinit var imgProduct: ImageView
@@ -29,7 +27,7 @@ class ProductDetailActivity : AppCompatActivity() {
     private lateinit var btnDecrease: Button
     private lateinit var btnIncrease: Button
     private lateinit var btnAddToCart: Button
-    private lateinit var btnEditProduct: Button
+    //private lateinit var btnEditProduct: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,18 +49,18 @@ class ProductDetailActivity : AppCompatActivity() {
         btnDecrease = findViewById(R.id.btnDecrease)
         btnIncrease = findViewById(R.id.btnIncrease)
         btnAddToCart = findViewById(R.id.btnAddToCart)
-        btnEditProduct = findViewById(R.id.btnEditProduct)
+       // btnEditProduct = findViewById(R.id.btnEditProduct)
 
-        val productId = intent.getIntExtra("productId", -1)
-        product = ProductStore.products.find { it.id == productId }
+        // 👉 Recuperamos TODOS los datos que mandó ProductListActivity
+        val id = intent.getIntExtra("id", 0)
+        val name = intent.getStringExtra("name") ?: ""
+        val description = intent.getStringExtra("description") ?: ""
+        val price = intent.getDoubleExtra("price", 0.0)
+        val category = intent.getStringExtra("category") ?: ""
+        val imageUri = intent.getStringExtra("imageUri") ?: ""
 
-        if (product == null) {
-            Util.showToast(this, "Producto no encontrado")
-            finish()
-            return
-        }
+        product = Product(id, name, description, price, category, imageUri)
 
-        // 👇 Aquí solo llamamos a la función, sin parámetros
         bindProduct()
 
         btnDecrease.setOnClickListener {
@@ -78,38 +76,36 @@ class ProductDetailActivity : AppCompatActivity() {
         }
 
         btnAddToCart.setOnClickListener {
-            CartManager.addProduct(product!!, quantity)
+            CartManager.addProduct(product, quantity)
             Util.showToast(this, "Añadido al carrito (${quantity})")
         }
 
-        btnEditProduct.setOnClickListener {
-            val intent = Intent(this, EditProductActivity::class.java)
-            intent.putExtra("productId", product!!.id)
-            startActivity(intent)
-        }
+        //btnEditProduct.setOnClickListener {
+            // Si quieres seguir usando edición, puedes pasar también los datos aquí
+          //  val intent = Intent(this, EditProductActivity::class.java).apply {
+            //    putExtra("id", product.id)
+              //  putExtra("name", product.name)
+                //putExtra("description", product.description)
+                //putExtra("price", product.price)
+                //putExtra("category", product.category)
+                //putExtra("imageUri", product.imageUri)
+            //}
+            //startActivity(intent)
+        //}
     }
 
     override fun onResume() {
         super.onResume()
-        // Por si el producto fue editado
-        product = ProductStore.products.find { it.id == product?.id }
-        if (product != null) {
-            bindProduct()
-        }
+        // Por ahora simplemente volvemos a pintar los datos actuales
+        bindProduct()
     }
 
     private fun bindProduct() {
-        // Mostrar imagen si existe, si no el ícono por defecto
-        if (product?.imageUri != null) {
-            imgProduct.setImageURI(Uri.parse(product!!.imageUri))
-        } else {
-            imgProduct.setImageResource(android.R.drawable.ic_menu_gallery)
-        }
-
-        txtName.text = product!!.name
-        txtCategory.text = "Categoría: ${product!!.category}"
-        txtDescription.text = product!!.description
-        txtPrice.text = Util.formatPrice(product!!.price)
+        imgProduct.setImageResource(android.R.drawable.ic_menu_gallery)
+        txtName.text = product.name
+        txtCategory.text = "Categoría: ${product.category}"
+        txtDescription.text = product.description
+        txtPrice.text = Util.formatPrice(product.price)
         txtQuantity.text = quantity.toString()
     }
 }

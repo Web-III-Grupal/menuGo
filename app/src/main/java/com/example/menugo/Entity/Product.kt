@@ -1,10 +1,12 @@
 package com.example.menugo.Entity
 
+import java.io.Serializable
+
 data class Product(
-    var id: Int,
-    var name: String,
-    var description: String,
-    var price: Double,
-    var category: String,
-    var imageUri: String? = null
+    val id: Int = 0,
+    val name: String = "",
+    val description: String = "",
+    val price: Double = 0.0,
+    val category: String = "",
+    val imageUri: String? = null   // aquí guardaremos el downloadUrl de Storage
 )

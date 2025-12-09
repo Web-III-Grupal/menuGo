@@ -28,4 +28,6 @@
     <string name="TextTitleDialogQuestion">Question...</string>
     <string name="TextSaveActionQuestion">Are you sure to save the information?</string>
     <string name="TextDeleteActionQuestion">Are you sure to delete the information?</string>
+    <string name="action_search">buscar</string>
+    <string name="action_logout">esta seguro de cerrar sesion?</string>
 </resources>

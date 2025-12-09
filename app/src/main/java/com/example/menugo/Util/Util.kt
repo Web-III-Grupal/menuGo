@@ -1,4 +1,4 @@
-package com.example.menugo.util
+package com.example.menugo.Util
 
 import android.content.Context
 import android.widget.Toast

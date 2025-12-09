@@ -2,35 +2,50 @@ package com.example.menugo
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.menugo.Entity.Product
+import com.example.menugo.Ui.CategoryAdapter
+import com.example.menugo.ProductListActivity
 import com.example.menugo.controller.ProductController
+import com.example.menugo.data.Category
 import com.example.menugo.data.IDataManager
 import com.example.menugo.data.MemoryDataManager
-import com.example.menugo.data.Category
-import com.example.menugo.Ui.CategoryAdapter
-import com.google.firebase.firestore.FirebaseFirestore
-import com.example.menugo.util.Util
-import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.example.menugo.Util.UserRole
+import com.example.menugo.Util.Util
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var controller: ProductController
+    private lateinit var auth: FirebaseAuth
+
+    // Rol que viene desde LoginActivity (por defecto cliente)
+    private var userRole: String = UserRole.ROLE_CLIENT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        val settings = FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(false)
-            .build()
-        FirebaseFirestore.getInstance().firestoreSettings = settings
+        // Toolbar como ActionBar
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        // Recibimos el rol desde LoginActivity (si viene)
+        userRole = intent.getStringExtra(UserRole.EXTRA_USER_ROLE) ?: UserRole.ROLE_CLIENT
+
+        // Inicializar Firebase
+        FirebaseApp.initializeApp(this)
+        auth = FirebaseAuth.getInstance()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -38,14 +53,14 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // --- CRUD en memoria ---
+        // --- CRUD en memoria (solo demo) ---
         val dataManager: IDataManager<Product> = MemoryDataManager()
         controller = ProductController(dataManager)
 
         controller.addProduct(
             Product(
                 id = 1,
-                name = "Hamburger Clásica",
+                name = "Hamburguesa Clásica",
                 description = "Carne, queso y lechuga",
                 price = 2500.0,
                 category = "Hamburguesas"
@@ -62,11 +77,8 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        val lista = controller.getAllProducts()
-        Util.showToast(this, "Productos cargados: ${lista.size}")
-
         // --- RecyclerView de categorías ---
-        val rvCategorie = findViewById<RecyclerView>(R.id.rvCategories)
+        val rvCategories = findViewById<RecyclerView>(R.id.rvCategories)
 
         val categories = listOf(
             Category(1, "Hamburguesas", android.R.drawable.ic_menu_gallery),
@@ -77,33 +89,43 @@ class MainActivity : AppCompatActivity() {
             Category(6, "Promociones", android.R.drawable.ic_menu_gallery)
         )
 
-        rvCategorie.layoutManager = GridLayoutManager(this, 3)
-        rvCategorie.adapter = CategoryAdapter(categories) { category ->
-            val intent = Intent(this, ProductListActivity::class.java)
-            intent.putExtra("category", category.name)
+        rvCategories.layoutManager = GridLayoutManager(this, 3)
+        rvCategories.adapter = CategoryAdapter(categories) { category ->
+            val intent = Intent(this, ProductListActivity::class.java).apply {
+                putExtra("category", category.name)
+                putExtra(UserRole.EXTRA_USER_ROLE, userRole) // pasamos el rol
+            }
             startActivity(intent)
         }
-
-        testFirebase()
-
     }
 
-    private fun testFirebase() {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("products")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val msg = "Firebase OK: ${snapshot.size()} docs"
-                Log.d("FirebaseTest", msg)
-                Util.showToast(this, msg)
-            }
-            .addOnFailureListener { e ->
-                val msg = "Firebase error: ${e.message}"
-                Log.e("FirebaseTest", msg, e)
-                Util.showToast(this, msg)
-            }
+    // ---------- MENÚ SUPERIOR (Buscar + Cerrar sesión) ----------
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
     }
 
-
-
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_search -> {
+                // Comportamiento sencillo para que no parezca que no hace nada
+                Util.showToast(
+                    this,
+                    "Para buscar, entra en una categoría y usa la barra de búsqueda."
+                )
+                true
+            }
+            R.id.action_logout -> {
+                // Cerrar sesión y volver al login
+                FirebaseAuth.getInstance().signOut()
+                val intent = Intent(this, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 }

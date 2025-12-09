@@ -5,30 +5,23 @@ import com.example.menugo.Entity.Product
 
 object CartManager {
 
-    private val _items = mutableListOf<CartItem>()
-    val items: List<CartItem>
-        get() = _items
+    private val items = mutableListOf<CartItem>()
 
-    fun addProduct(product: Product, quantity: Int = 1) {
-        val existing = _items.find { it.product.id == product.id }
+    fun addProduct(product: Product, quantity: Int) {
+        val existing = items.find { it.product.id == product.id }
         if (existing != null) {
             existing.quantity += quantity
         } else {
-            _items.add(CartItem(product, quantity))
+            items.add(CartItem(product, quantity))
         }
     }
 
-    fun removeProduct(productId: Int) {
-        _items.removeAll { it.product.id == productId }
-    }
+    fun getItems(): List<CartItem> = items
+
+    fun getTotal(): Double =
+        items.sumOf { it.product.price * it.quantity }
 
     fun clear() {
-        _items.clear()
+        items.clear()
     }
-
-    fun getTotal(): Double {
-        return _items.sumOf { it.total }
-    }
-
-    fun isEmpty(): Boolean = _items.isEmpty()
 }
